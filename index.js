@@ -20,13 +20,17 @@ app.set("views", "./views");
 app.set("view engine", "pug");
 
 app.get("/", (req, res) => {
-  db.get("select * from urls", [], (err, rows) => {
+  db.all("SELECT * FROM urls", [], (err, rows) => {
     if (err) {
       res
         .status(500) // HTTP status 404: NotFound
         .render("error", { status: 500, message: "Something went wrong" });
     } else {
       res.render("index", { rows });
+
+      rows.forEach(item => {
+        console.log(item.id + ' : ' + item.url + ' : ' + item.visits)
+      })
     }
   });
 });
@@ -40,7 +44,7 @@ app.post("/", (req, res) => {
   }
 
   // Check if url exists in db, if so return ID
-  db.get("select * from urls where url = ?", [url], (err, result) => {
+  db.get("SELECT * FROM urls WHERE url = ?", [url], (err, result) => {
     if (err) {
       res
         .status(500) // HTTP status 404: NotFound
@@ -62,12 +66,24 @@ app.post("/", (req, res) => {
 });
 
 app.get("/:id", (req, res) => {
-  db.get("select * from urls where id = ?", [req.params.id], (err, result) => {
+  db.get("SELECT * FROM urls WHERE id = ?", [req.params.id], (err, result) => {
     if (err || !result) {
       res
         .status(404) // HTTP status 404: NotFound
         .render("error", { status: 404, message: "URL Not Found" });
     } else {
+      db.run(
+        "UPDATE urls SET visits = visits + 1 WHERE id = ?",
+        [result.id],
+        function(err) {
+          if (err) {
+            console.error('Something went wrong');
+          } else {
+            // Success
+          }
+        }
+      );
+
       res.redirect(result.url);
     }
   });

@@ -19,11 +19,14 @@ app.use(
 app.set("views", "./views");
 app.set("view engine", "pug");
 
+/**
+ * GET Home route
+ */
 app.get("/", (req, res) => {
   db.all("SELECT * FROM urls", [], (err, rows) => {
     if (err) {
       res
-        .status(500) // HTTP status 404: NotFound
+        .status(500)
         .render("error", { status: 500, message: "Something went wrong" });
     } else {
       res.render("index", { rows });
@@ -35,6 +38,9 @@ app.get("/", (req, res) => {
   });
 });
 
+/**
+ * POST to Home route
+ */
 app.post("/", (req, res) => {
   let url = req.body.url;
 
@@ -43,19 +49,21 @@ app.post("/", (req, res) => {
     res.render("index", { error: "URL is not valid", url: url });
   }
 
-  // Check if url exists in db, if so return ID
+  // Check if url exists in db
   db.get("SELECT * FROM urls WHERE url = ?", [url], (err, result) => {
     if (err) {
       res
-        .status(500) // HTTP status 404: NotFound
+        .status(500)
         .render("error", { status: 500, message: "Something went wrong" });
     } else if (result) {
+      // URL already exists in DB, return id from row
       res.render("index", { shortUrl: base_url + "/" + result.id });
     } else {
+      // Create a new record with new URL
       db.run("INSERT INTO urls (url) VALUES (?)", [url], function(err) {
         if (err) {
           res
-            .status(500) // HTTP status 404: NotFound
+            .status(500)
             .render("error", { status: 500, message: "Something went wrong" });
         }
 
@@ -69,7 +77,7 @@ app.get("/:id", (req, res) => {
   db.get("SELECT * FROM urls WHERE id = ?", [req.params.id], (err, result) => {
     if (err || !result) {
       res
-        .status(404) // HTTP status 404: NotFound
+        .status(404)
         .render("error", { status: 404, message: "URL Not Found" });
     } else {
       db.run(
@@ -78,8 +86,6 @@ app.get("/:id", (req, res) => {
         function(err) {
           if (err) {
             console.error('Something went wrong');
-          } else {
-            // Success
           }
         }
       );
